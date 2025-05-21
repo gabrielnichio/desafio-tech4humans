@@ -30,19 +30,22 @@ class Agent:
         Settings.llm = llm
         
         self.tools = None
-    
-        self.colab = pd.read_excel("data/Dados Colaboradores.xlsx")
-        self.unimed = pd.read_excel("data/Beneficio 1 - Unimed.xlsx")
-        self.gympass = pd.read_excel("data/Beneficio 2 - Gympass.xlsx")
-        self.github = pd.read_excel("data/Ferramenta 1 - Github.xlsx")
-        self.google = pd.read_excel("data/Ferramenta 2 - Google workspace.xlsx")
+        
+        data_path = "data"
+        
+        self.dataframes = {}
+        
+        for file in os.listdir(data_path):
+            if file.endswith(".xlsx"):
+                file_path = os.path.join(data_path, file)
+                self.dataframes[file.replace(".xlsx", "").lower().replace("-", "_").replace(" ", "")] = pd.read_excel(file_path)
         
         self._set_tools()
         self._init_agent()
         
     def _set_tools(self):
 
-        pandas_executor = PandasExecutor(self.colab, self.unimed, self.gympass, self.github, self.google)
+        pandas_executor = PandasExecutor(self.dataframes)
         
         get_infos = FunctionTool.from_defaults(
             pandas_executor.get_infos,
@@ -53,7 +56,7 @@ class Agent:
         exec_code = FunctionTool.from_defaults(
             pandas_executor.execute,
             name="ExecutaCodigo",
-            description="Funcao capaz de executar um codigo pandas em dataframes. OBRIGATÓRIO: A funcao DEVE receber o parametro 'codigo', uma string contendo o codigo a ser executado. Exemplo de uso correto: ExecutaCodigo(codigo='df_final = colab.copy()'). Apenas a biblioteca pandas(pd) esta disponivel no ambiente."
+            description="Funcao capaz de executar um codigo pandas em dataframes."
         )
 
         export_xlsx = FunctionTool.from_defaults(
@@ -63,7 +66,7 @@ class Agent:
         )
     
         
-        self.tools = [get_infos, exec_code, export_xlsx]        
+        self.tools = [exec_code, export_xlsx]        
         
         
     def _init_agent(self):
@@ -75,18 +78,14 @@ class Agent:
                                         
                     Através das suas ferramentas você pode ler e manipular os dados dos dataframes.
                     
-                    IMPORTANTE: A ferramenta ExecutaCodigo DEVE receber exatamente um argumento chamado 'codigo'. Por exemplo:
-                    ExecutaCodigo(codigo="df_final = colab[['Nome', 'CPF']].copy()")
-                    
-                    Nunca chame ExecutaCodigo sem fornecer o argumento 'codigo'. A sintaxe ExecutaCodigo() sem argumentos resultará em erro.
+                    A ferramenta Executa codigo é utilizada para executar um código python que manipula os dataframes.
 
                     A ferramenta ExportaDataframe é utilizada para exportar o df_final que foi gerado e que esta armazenado no self de uma classe python.
                             
                     Seu trabalho final é exportar um dataframe com as seguintes colunas: ID, Nome, Centro de Custo, Custo por Ferramenta, Custo por Beneficio e Custo Total. Levando em consideração os custos de todas as planilhas que você possui.
                     
                     Fluxo de trabalho recomendado:
-                    1. Use GetInfos() para obter informações sobre os dataframes
-                    2. Use ExecutaCodigo(codigo="seu_codigo_aqui") para processar os dados
+                    2. Use ExecutaCodigo() para processar os dados
                     3. Use ExportaDataframe() para exportar o resultado final
                 """
             )
