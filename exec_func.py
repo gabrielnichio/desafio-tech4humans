@@ -1,56 +1,81 @@
 import pandas as pd
 
+from llama_index.llms.anthropic import Anthropic
+
 class PandasExecutor:
-    def __init__(self, colab, google):
+    def __init__(self, colab, unimed, gympass, github, google):
+        self.llm = Anthropic(model="claude-3-5-haiku-latest", temperature=0, timeout=None, max_retries=2)
+        
         self.colab = colab
+        self.unimed = unimed
+        self.gympass = gympass
+        self.github = github
         self.google = google
-        self.df_final: pd.DataFrame
-    
-    def execute(self, comando):
+        self.df_final = pd.DataFrame({"ID": pd.Series(dtype='str'), "Nome": pd.Series(dtype='str'), "Centro de Custo": pd.Series(dtype='str'), "Custo por Ferramenta": pd.Series(dtype=float), "Custo por Beneficio": pd.Series(dtype=float), "Custo Total": pd.Series(dtype=float)})
+        
+    def get_infos(self):
         """
-            Funcao que executa apenas uma linha de codigo pandas. Eh possivel realizar operacoes utilizando o dataframe de colaboradores 'colab', o dataframe
-            da ferramenta Google Workspace 'google' e o 'df_final' que eh um: pd.DataFrame({"A": pd.Series(dtype='float')}).
-
-            A funcao recebe:
-                comando: string contendo uma linha de codigo
-
-            O codigo deve ser capaz de ser executado dentro da funcao exec() do Python. Apenas a biblioteca pandas as pd esta disponivel para manipulacoes.
-
-            Essas sao as local_vars:
-
+            Funcao que retorna as informacoes dos dataframes
+        """
+        
+        def format_df_info(df, name):
+            return f"""
+            {name}:
+            Shape: {df.shape}
+            Columns: {list(df.columns)}
+            Data types: 
+            {df.dtypes}
+            
+            First 5 rows:
+            {df.head().to_string()}
+            """
+        
+        colab_info = format_df_info(self.colab, "colab")
+        unimed_info = format_df_info(self.unimed, "unimed")
+        gympass_info = format_df_info(self.gympass, "gympass")
+        github_info = format_df_info(self.github, "github")
+        google_info = format_df_info(self.google, "google")
+        df_final_info = format_df_info(self.df_final, "df_final")
+        
+        return colab_info + unimed_info + gympass_info + github_info + google_info + df_final_info
+    
+    def execute(self, codigo):
+        """
+            Função que capaz de executar um codigo python. As variaveis locais devem ser executadas e um df_final deve ser atribuido. Apenas a biblioteca pandas(pd) pode ser utilizada.
+            
             local_vars = {
                 "colab": self.colab,
+                "unimed": self.unimed,
+                "gympass": self.gympass,
+                "github": self.github,
                 "google": self.google,
-                "df_final": pd.DataFrame({"A": pd.Series(dtype='float')})
+                "df_final": self.df_final
             }
+            
         """
-
-        print("Comando mandado: ", str(comando))
 
         local_vars = {
             "colab": self.colab,
+            "unimed": self.unimed,
+            "gympass": self.gympass,
+            "github": self.github,
             "google": self.google,
-            "df_final": pd.DataFrame({"A": pd.Series(dtype='float')})
+            "df_final": self.df_final
         }
-        
-        exec(comando, globals(), local_vars)
-
-        # print("Local vars: ", local_vars)
+                    
+        exec(codigo, globals(), local_vars)
         
         self.df_final = local_vars["df_final"]
 
-        print("DF_FINAL: ", self.df_final.head())
+        print("\n\n--------------\n\nDF_FINAL: ", self.df_final.head(), "\n\n")
 
     def export_df(self):
         """
             Funcao capaz de exportar o df_final
         """
         self.df_final.to_excel("teste.xlsx")
+        
+        print("Dataframe exportado com sucesso!")
 
-# # Uso
-# colab = pd.read_excel("data/Dados Colaboradores.xlsx")
-# google = pd.read_excel("data/Ferramentas/Ferramenta 2 - Google workspace.xlsx")
-# executor = PandasExecutor(colab, google)
-# executor.execute("df_final['A'] = colab['Salario'].reset_index(drop=True) + google['Valor Mensal'].reset_index(drop=True)")
-# executor.df.to_excel("teste.xlsx", index=False)
-# some a coluna Salario do dataframe colab e a coluna Valor Mensal do dataframe google, armazene na coluna A do dataframe final e exporte esse dataframe
+
+# gere o dataframe final calculando os custos para cada colaborador. Manipule e padronize os dados das diferentes planilhas para conseguir fazer isso corretamente

@@ -19,47 +19,41 @@ from llama_index.llms.anthropic import Anthropic
 from llama_index.llms.openai import OpenAI
 
 from llama_index.core import Settings
+import os
 
 
 class Agent:
     def __init__(self):
-        llm = Anthropic(model="claude-3-5-haiku-latest", temperature=0.5, timeout=None, max_retries=2)
-        # llm = OpenAI(model="o3-mini", temperature=0.5, max_retries=2)
+        llm = Anthropic(model="claude-3-5-sonnet-latest", temperature=0, timeout=None, max_retries=2)
+        # llm = OpenAI(model="gpt-4.1-mini", temperature=0.5, max_retries=2)
         
         Settings.llm = llm
         
         self.tools = None
+    
+        self.colab = pd.read_excel("data/Dados Colaboradores.xlsx")
+        self.unimed = pd.read_excel("data/Beneficio 1 - Unimed.xlsx")
+        self.gympass = pd.read_excel("data/Beneficio 2 - Gympass.xlsx")
+        self.github = pd.read_excel("data/Ferramenta 1 - Github.xlsx")
+        self.google = pd.read_excel("data/Ferramenta 2 - Google workspace.xlsx")
         
         self._set_tools()
         self._init_agent()
         
     def _set_tools(self):
-        colab = pd.read_excel("data/Dados Colaboradores.xlsx")
-        google = pd.read_excel("data/Ferramentas/Ferramenta 2 - Google workspace.xlsx") 
 
-        pandas_executor = PandasExecutor(colab, google)
-    
-
-        # colab = QueryEngine("data/Dados Colaboradores.xlsx")
+        pandas_executor = PandasExecutor(self.colab, self.unimed, self.gympass, self.github, self.google)
         
-        # beneficio_unimef = QueryEngine("data/Beneficios/Beneficio 1 - Unimed.xlsx")
-        
-        # colab_qe = QueryEngineTool.from_defaults(
-        #     colab.get_QE(),
-        #     name="QueryEngineColaboradores",
-        #     description="Query engine utilizada para analisar os dados dos colaboradores. Deve ser passado uma query como parametro, que será convertida em um codigo pandas do Python"
-        # )
-        
-        # unimed_qe = QueryEngineTool.from_defaults(
-        #     beneficio_unimef.get_QE(),
-        #     name="QueryEngineBeneficioUnimed",
-        #     description="Query engine que pode ser utilizada para analisar dados do beneficio da unimed dos colaboradores. Deve ser passado uma query como parametro, que será convertida em um codigo pandas do Python."
-        # )
+        get_infos = FunctionTool.from_defaults(
+            pandas_executor.get_infos,
+            name="GetInfos",
+            description="Funcao que retorna as informacoes dos dataframes. Essa funcao deve ser chamada antes de executar qualquer linha de codigo."
+        )
 
         exec_code = FunctionTool.from_defaults(
             pandas_executor.execute,
             name="ExecutaCodigo",
-            description="Funcao capaz de executar uma linha de codigo pandas em dataframes. A funcao recebe o parametro 'codigo', uma string contendo uma linha de codigo pandas. Apenas a biblioteca pandas(pd) esta disponivel no ambiente."
+            description="Funcao capaz de executar um codigo pandas em dataframes. OBRIGATÓRIO: A funcao DEVE receber o parametro 'codigo', uma string contendo o codigo a ser executado. Exemplo de uso correto: ExecutaCodigo(codigo='df_final = colab.copy()'). Apenas a biblioteca pandas(pd) esta disponivel no ambiente."
         )
 
         export_xlsx = FunctionTool.from_defaults(
@@ -69,21 +63,31 @@ class Agent:
         )
     
         
-        self.tools = [exec_code, export_xlsx]        
+        self.tools = [get_infos, exec_code, export_xlsx]        
         
         
     def _init_agent(self):
         self.agent = FunctionAgent(
             tools=self.tools,
             system_prompt=(
-                """
-                    Você é um agente especializado em análise de dados. Você tem a capacidade de manipular alguns dataframes através de funções. Você consegue manipular um df_final
-                    que está disponível no ambiente de execução. Você possui o dataframe de colaboradores "colab" e o dataframe "google" que você também pode utilizar.
-
-                    Através das suas ferramentas você pode manipular os dados dos dataframes.
-                    A ferramenta ExecutaCodigo pode executar uma linha de codigo pandas com os dataframes mencionados anteriormente. Lá você manipula esses dataframes utilizando apenas a biblioteca pandas(pd).
+                f"""
+                    Você é um agente especializado em análise de dados. Você tem a capacidade de manipular alguns dataframes através de funções.
+                                        
+                    Através das suas ferramentas você pode ler e manipular os dados dos dataframes.
+                    
+                    IMPORTANTE: A ferramenta ExecutaCodigo DEVE receber exatamente um argumento chamado 'codigo'. Por exemplo:
+                    ExecutaCodigo(codigo="df_final = colab[['Nome', 'CPF']].copy()")
+                    
+                    Nunca chame ExecutaCodigo sem fornecer o argumento 'codigo'. A sintaxe ExecutaCodigo() sem argumentos resultará em erro.
 
                     A ferramenta ExportaDataframe é utilizada para exportar o df_final que foi gerado e que esta armazenado no self de uma classe python.
+                            
+                    Seu trabalho final é exportar um dataframe com as seguintes colunas: ID, Nome, Centro de Custo, Custo por Ferramenta, Custo por Beneficio e Custo Total. Levando em consideração os custos de todas as planilhas que você possui.
+                    
+                    Fluxo de trabalho recomendado:
+                    1. Use GetInfos() para obter informações sobre os dataframes
+                    2. Use ExecutaCodigo(codigo="seu_codigo_aqui") para processar os dados
+                    3. Use ExportaDataframe() para exportar o resultado final
                 """
             )
         )
