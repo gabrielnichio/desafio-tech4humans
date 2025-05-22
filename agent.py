@@ -52,6 +52,17 @@ class Agent:
             name="GetInfos",
             description="Funcao que retorna as informacoes dos dataframes. Essa funcao deve ser chamada antes de executar qualquer linha de codigo. Ela lista o nome e informações dos dataframes que estão disponíveis para manipulação.",
         )
+
+        gera_id_unico = FunctionTool.from_defaults(
+            pandas_executor.gera_id_unico,
+            name="GeraIDUnico",
+            description="""
+                Funcao que gera um id unico para cada colaborador em todos os dataframes. A coluna resultante deve ser utilizada como id unico e para operações de merge nos dataframes. 
+                Deve ser passado uma lista com os nomes dos dataframes, uma lista com so nomes da colunas do nome do colaborador e uma lista com os nomes das colunas do documento do colaborador para os respectivos dataframes.
+                Essa função DEVE ser chamada logo após a execução da função GetInfos, para garantir que os dataframes estejam prontos para serem manipulados.
+                Exemplo: GeraIDUnico(dataframes=['df1', 'df2'], nome_coluna_nome=['coluna1', 'coluna2'], nome_coluna_documento=['coluna3', 'coluna4'])
+            """
+        )
         
         rename_columns = FunctionTool.from_defaults(
             pandas_executor.rename_columns,
@@ -80,7 +91,7 @@ class Agent:
         merge_dataframes = FunctionTool.from_defaults(
             pandas_executor.merge_dataframes,
             name="MergeDataframes",
-            description="Função que faz o merge de dois dataframes. Deve ser passado o nome dos dataframes a serem unidos, a coluna do dataframe da esquerda, coluna do dataframe da direita, o parametro how do merge, e o nome do dataframe de destino. Nunca utilize nomes de dataframes que não existam. Exemplo: MergeDataframes(dataframe1='df1', dataframe2='df2', left_on='coluna_df1', right_on='coluna_df2', how='left', destination='df_final')",
+            description="Função que faz o merge de dois dataframes. Deve ser passado o nome dos dataframes a serem unidos, a coluna do dataframe da esquerda, coluna do dataframe da direita (Utilize o nome nos dataframes como base para o merge), o parametro how do merge, e o nome do dataframe de destino. Nunca utilize nomes de dataframes que não existam. Exemplo: MergeDataframes(dataframe1='df1', dataframe2='df2', left_on='coluna_df1', right_on='coluna_df2', how='left', destination='df_final')",
         )
         
         export_xlsx = FunctionTool.from_defaults(
@@ -90,7 +101,7 @@ class Agent:
         )
     
         
-        self.tools = [get_infos, rename_columns, remove_colunas, soma_colunas, merge_dataframes, export_xlsx]        
+        self.tools = [get_infos, gera_id_unico, rename_columns, remove_colunas, soma_colunas, merge_dataframes, export_xlsx]        
         
         
     def _init_agent(self):
@@ -102,8 +113,10 @@ class Agent:
                                         
                     Através das suas ferramentas você pode ler e manipular os dados dos dataframes.
                     
-                    Com a ferramenta GetInfos você pode obter informações sobre os dataframes disponíveis para manipulação. Ela deve ser chamada antes de executar qualquer outra função para você saber a estrutura dos dataframes disponíveis. Ela também deve ser executada depois de cada chamada de outra função para você saber o estado do processo. Você pode usar essa ferramenta toda vez que for conveniênte saber os dataframes disponíveis.
+                    Com a ferramenta GetInfos você pode obter informações sobre os dataframes disponíveis para manipulação. Ela deve ser chamada antes de executar qualquer outra função para você saber a estrutura dos dataframes disponíveis. A funcao tambem mostra colunas com valores repetidos, leve isso em consideracao para escolher as colunas que serao utilizadas no merge.
                     
+                    A ferramenta GeraIDUnico é utilizada para gerar um id unico para cada colaborador em todos os dataframes. A coluna resultante deve ser utilizada como id unico e para operações de merge nos dataframes. Você deve passar uma lista com os nomes dos dataframes, uma lista com so nomes da colunas do nome do colaborador e uma lista com os nomes das colunas do documento do colaborador para os respectivos dataframes. Essa função DEVE ser chamada logo após a execução da função GetInfos, para garantir que os dataframes estejam prontos para serem manipulados.
+
                     A ferramenta RenameColumns é utilizada para renomear as colunas de um dataframe. Você deve passar o nome do dataframe, as colunas a serem renomeadas e os novos nomes das colunas. Utilize ela em todos os dataframes necessários para padronizar o nome das colunas em comum em todos os dataframes. Você pode usar essa ferramenta quantas vezes for necessário para renomear as colunas do dataframe.
                                    
                     A ferramenta RemoveColumns é utilizada para remover as colunas de um dataframe. Você deve passar o nome do dataframe e as colunas a serem removidas. Utilize ela em todos os dataframes necessários para remover as colunas que não são necessárias para o seu trabalho. Você pode usar essa ferramenta quantas vezes for necessário para remover as colunas do dataframe.     
@@ -111,6 +124,7 @@ class Agent:
                     A ferramenta SomaColunas é utilizada para somar as colunas de um dataframe. Você deve passar o nome do dataframe, as colunas a serem somadas e o nome da nova coluna. Ela pode ser utilizada quantas vezes for necessário para somar as colunas do dataframe.
                                         
                     A ferramenta MergeDataframes é utilizada para fazer o merge de dois dataframes. Você deve passar o nome dos dataframes a serem unidos, a coluna do dataframe da esquerda, coluna do dataframe da direita, o parametro how do merge e o nome do dataframe de destino. Ela pode ser utilizada quantas vezes for necessário para unir os dataframes.
+                    Dê merge utilizando como base as colunas de nome nos dataframes.
                     NUNCA utilize nomes de dataframes que não existem como parâmetro para as funções.
 
                     A ferramenta ExportaDataframe é utilizada para exportar um dataframe para um arquivo Excel. Você deve passar o nome do dataframe a ser exportado.

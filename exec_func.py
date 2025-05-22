@@ -9,7 +9,7 @@ class PandasExecutor:
         """
             Funcao que retorna as informacoes dos dataframes
         """
-    
+
         def format_df_info(df, name):
             return f"""
             {name}:
@@ -17,17 +17,30 @@ class PandasExecutor:
             Columns: {list(df.columns)}
             Data types: 
             {df.dtypes}
-            
-            First 5 rows:
-            {df.head().to_string()}
             """
         all_info = []    
-        
+
         for dataframe in self.dataframes:
             all_info.append(format_df_info(self.dataframes[dataframe], dataframe))
-                
+
         return "\n\n".join(all_info)
     
+    def gera_id_unico(self, dataframes: list, nome_coluna_nome: list, nome_coluna_documento: list):
+
+        """
+            Funcao que gera um id unico para cada colaborador
+        """
+
+        for i, dataframe in enumerate(dataframes):
+            col_nome = nome_coluna_nome[i]
+            col_doc = nome_coluna_documento[i]
+            
+            self.dataframes[dataframe]["id_unico"] = self.dataframes[dataframe].apply(
+                lambda x: f"{x[col_nome]}_{x[col_doc]}", axis=1
+            )
+
+        return self.get_infos()
+     
     
     def rename_columns(self, dataframe_to_change: str, columns: list, new_columns: list):
         """
@@ -84,6 +97,7 @@ class PandasExecutor:
                 
         
         print(f"Colunas {columns} somadas com sucesso e armazenadas na coluna {new_column_name}!\n\n")
+
     def merge_dataframes(self, dataframe1: str, dataframe2: str, left_on: str, right_on: str, how: str, destination: str):
         """
             Funcao que faz o merge de dois dataframes
