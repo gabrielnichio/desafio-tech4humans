@@ -75,10 +75,23 @@ class Agent:
             description="Funcao que remove as colunas de um dataframe. Deve ser passado o nome do dataframe e as colunas a serem removidas. Exemplo: RemoveColumns(dataframe='df1', columns=['coluna1', 'coluna2'])"
         )
         
+        selecionar_colunas = FunctionTool.from_defaults(
+            pandas_executor.select_columns,
+            name="SelecionarColunas",
+            description="Funcao que seleciona as colunas de um dataframe. Deve ser passado o nome do dataframe e as colunas a serem selecionadas. Exemplo: SelecionarColunas(dataframe='df1', columns=['coluna1', 'coluna2'])"
+        )
+        
         soma_colunas = FunctionTool.from_defaults(
             pandas_executor.soma_colunas,
             name="SomaColunas",
             description="Funcao que soma as colunas de um dataframe. Deve ser passado o nome do dataframe, as colunas a serem somadas e o nome da nova coluna. Exemplo: SomaColunas(dataframe='df1', columns=['coluna1', 'coluna2'], new_column_name='soma')"
+        )
+        
+        
+        soma_group_columns = FunctionTool.from_defaults(
+            pandas_executor.sum_column_groups,
+            name="SomaColunasAgrupadas",
+            description="Função que soma varios grupos de colunas de um dataframe de uma só vez. Deve ser passado o nome do dataframe e um dicionario onde as chaves são os nomes das novas colunas e os valores são listas com os nomes das colunas a serem somadas. Exemplo: SomaColunasAgrupadas(dataframe='df1', column_groups={'soma1': ['coluna1', 'coluna2'], 'soma2': ['coluna3', 'coluna4']})"
         )
 
         merge_dataframes = FunctionTool.from_defaults(
@@ -100,7 +113,7 @@ class Agent:
         )
     
         
-        self.tools = [get_infos, gera_id_unico, rename_columns, remove_colunas, soma_colunas, merge_multiple_dfs, export_xlsx]        
+        self.tools = [get_infos, gera_id_unico, rename_columns, selecionar_colunas, soma_colunas, merge_multiple_dfs, export_xlsx]        
         
         
     def _init_agent(self):
@@ -117,15 +130,15 @@ class Agent:
                     A ferramenta GeraIDUnico é utilizada para gerar um id unico para cada colaborador em todos os dataframes. A coluna resultante deve ser utilizada como id unico e para operações de merge nos dataframes. Você deve passar uma lista com os nomes dos dataframes, uma lista com so nomes da colunas do nome do colaborador e uma lista com os nomes das colunas do documento do colaborador para os respectivos dataframes. Essa função DEVE ser chamada logo após a execução da função GetInfos, para garantir que os dataframes estejam prontos para serem manipulados.
 
                     A ferramenta RenameColumns é utilizada para renomear as colunas de um dataframe. Você deve passar o nome do dataframe, as colunas a serem renomeadas e os novos nomes das colunas. Utilize ela em todos os dataframes necessários para padronizar o nome das colunas em comum em todos os dataframes. Você pode usar essa ferramenta quantas vezes for necessário para renomear as colunas do dataframe.
-                                   
-                    A ferramenta RemoveColumns é utilizada para remover as colunas de um dataframe. Você deve passar o nome do dataframe e as colunas a serem removidas. Utilize ela em todos os dataframes necessários para remover as colunas que não são necessárias para o seu trabalho. Você pode usar essa ferramenta quantas vezes for necessário para remover as colunas do dataframe.     
+                                                       
+                    A ferramenta SelecionarColunas é utilizada para selecionar as colunas de um dataframe. Você deve passar o nome do dataframe e as colunas a serem selecionadas. Essa função só pode ser executada uma única vez ao longo do fluxo. Ela é útil para filtrar as colunas que você deseja manter no dataframe final.
                     
-                    A ferramenta SomaColunas é utilizada para somar as colunas de um dataframe. Você deve passar o nome do dataframe, as colunas a serem somadas e o nome da nova coluna. Ela pode ser utilizada quantas vezes for necessário para somar as colunas do dataframe.
+                    A ferramenta SomaColunasAgrupadas é utilizada para somar vários grupos de colunas de um dataframe de uma só vez. Você deve passar o nome do dataframe e um dicionário onde as chaves são os nomes das novas colunas e os valores são listas com os nomes das colunas a serem somadas. Essa função só pode ser executada uma única vez ao longo do fluxo.
 
                     A ferramenta MergeMultipleDataframes é utilizada para fazer o merge de múltiplos dataframes de uma só vez usando uma coluna em comum. Você deve passar uma lista com os nomes dos dataframes a serem unidos, o nome da coluna a ser usada como base para o merge (geralmente 'id_unico'), o parâmetro how do merge ('left', 'right', 'inner', 'outer'), e o nome do dataframe de destino. Execute essa função logo após da GeraIDUnico e execute ela apenas uma vez ao longo do fluxo. Exemplo: MergeMultipleDataframes(dataframes_list=['df1', 'df2', 'df3'], on_column='id_unico', how='left', destination='df_final')
                     NUNCA utilize nomes de dataframes que não existem como parâmetro para as funções.
 
-                    A ferramenta ExportaDataframe é utilizada para exportar um dataframe para um arquivo Excel. Você deve passar o nome do dataframe a ser exportado.
+                    A ferramenta ExportaDataframe é utilizada para exportar um dataframe para um arquivo Excel. Você deve passar o nome do dataframe a ser exportado. Sempre execute a função GetInfos antes de exportar o dataframe final para garantir que o dataframe final tenha apenas as colunas requisitadas.
                     
                     - Considerações importantes:
                       - Sempre crie um novo dataframe antes de passar um nome novo para as outras funções.
@@ -164,9 +177,7 @@ if __name__ == "__main__":
             -Nome: Nome do colaborador
             -Centro de Custo: centro de custo do colaborador
             -uma coluna para cada custo, sendo o nome da coluna o nome do custo
-            -Custo Ferramentas: custo total das FERRAMENTAS utilizadas pelo colaborador (em apenas uma coluna)
-            -Custo Beneficios: custo total dos BENEFICIOS utilizados pelo colaborador (em apenas uma coluna)
-            -Custo Total: soma de todos os custos do colaborador (ferramentas + beneficios + salario, + ...)) (em apenas uma coluna)
-
+            -Custo Total: soma de todos os custos do colaborador
+            
         Não insira mais nenhuma coluna relacionada a outras coisas no dataframe final.
     """))

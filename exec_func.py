@@ -90,6 +90,31 @@ class PandasExecutor:
                 
         
         print(f"Colunas {columns} somadas com sucesso e armazenadas na coluna {new_column_name}!\n\n")
+        
+    def select_columns(self, dataframe: str, columns: list):
+        """
+            Função que modifica um dataframe para conter apenas as colunas especificadas
+            Parâmetros:
+                dataframe (str): Nome do dataframe a ser modificado
+                columns (list): Lista com os nomes das colunas a serem mantidas
+            
+            Retorno:
+                str: Mensagem de sucesso ou erro
+        """
+        
+        try:
+            df = self.dataframes[dataframe].copy()
+            
+            for col in columns:
+                if col not in df.columns:
+                    return f"Erro: A coluna '{col}' não existe no dataframe '{dataframe}'."
+            
+            df = df[columns]
+            self.dataframes[dataframe] = df
+            
+            return "Colunas selecionadas com sucesso!\n\n"
+        except Exception as e:
+            return f"Erro ao selecionar colunas: {e}"
 
     def sum_column_groups(self, dataframe: str, groups: dict):
         """
