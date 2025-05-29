@@ -113,7 +113,7 @@ class Agent:
         )
     
         
-        self.tools = [get_infos, gera_id_unico, rename_columns, selecionar_colunas, soma_colunas, merge_multiple_dfs, export_xlsx]        
+        self.tools = [get_infos, gera_id_unico, rename_columns, selecionar_colunas, soma_group_columns, merge_multiple_dfs, export_xlsx]        
         
         
     def _init_agent(self):
@@ -135,7 +135,7 @@ class Agent:
                     
                     A ferramenta SomaColunasAgrupadas é utilizada para somar vários grupos de colunas de um dataframe de uma só vez. Você deve passar o nome do dataframe e um dicionário onde as chaves são os nomes das novas colunas e os valores são listas com os nomes das colunas a serem somadas. Essa função só pode ser executada uma única vez ao longo do fluxo.
 
-                    A ferramenta MergeMultipleDataframes é utilizada para fazer o merge de múltiplos dataframes de uma só vez usando uma coluna em comum. Você deve passar uma lista com os nomes dos dataframes a serem unidos, o nome da coluna a ser usada como base para o merge (geralmente 'id_unico'), o parâmetro how do merge ('left', 'right', 'inner', 'outer'), e o nome do dataframe de destino. Execute essa função logo após da GeraIDUnico e execute ela apenas uma vez ao longo do fluxo. Exemplo: MergeMultipleDataframes(dataframes_list=['df1', 'df2', 'df3'], on_column='id_unico', how='left', destination='df_final')
+                    A ferramenta MergeMultipleDataframes é utilizada para fazer o merge de múltiplos dataframes de uma só vez usando uma coluna em comum. Você deve passar uma lista com os nomes dos dataframes a serem unidos, o nome da coluna a ser usada como base para o merge (geralmente 'id_unico'), o parâmetro how do merge ('left', 'right', 'inner', 'outer'), e o nome do dataframe de destino. Exemplo: MergeMultipleDataframes(dataframes_list=['df1', 'df2', 'df3'], on_column='id_unico', how='left', destination='df_final')
                     NUNCA utilize nomes de dataframes que não existem como parâmetro para as funções.
 
                     A ferramenta ExportaDataframe é utilizada para exportar um dataframe para um arquivo Excel. Você deve passar o nome do dataframe a ser exportado. Sempre execute a função GetInfos antes de exportar o dataframe final para garantir que o dataframe final tenha apenas as colunas requisitadas.
@@ -176,7 +176,7 @@ if __name__ == "__main__":
             -ID: identificador do colaborador (id unico)
             -Nome: Nome do colaborador
             -Centro de Custo: centro de custo do colaborador
-            -uma coluna para cada custo, sendo o nome da coluna o nome do custo
+            -uma coluna para cada custo, sendo o nome da coluna o nome do custo (ferramentas, beneficios, salarios, prejuizos, etc)
             -Custo Total: soma de todos os custos do colaborador
             
         Não insira mais nenhuma coluna relacionada a outras coisas no dataframe final.

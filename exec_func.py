@@ -40,8 +40,7 @@ class PandasExecutor:
             )
 
         return self.get_infos()
-     
-    
+      
     def rename_columns(self, dataframe_to_change: str, columns: list, new_columns: list):
         """
             Funcao que renomeia as colunas de um dataframe
@@ -58,9 +57,7 @@ class PandasExecutor:
             
             return f"Colunas renomeadas com sucesso!\n\n"
         except Exception as e:
-            return f"Erro ao renomear colunas: {e}"
-        
-        
+            return f"Erro ao renomear colunas: {e}" 
         
     def remove_columns(self, dataframe_to_change: str, columns: list):
         """
