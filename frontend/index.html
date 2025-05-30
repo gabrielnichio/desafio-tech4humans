@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload de Arquivos Excel</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Upload de Arquivos Excel</h1>
+            <p>Selecione um ou mais arquivos Excel para enviar</p>
+        </header>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <p>Arraste arquivos aqui ou clique para selecionar</p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls" multiple>
+        </div>
+
+        <div class="file-list" id="fileList"></div>
+
+        <div class="actions">
+            <button id="uploadBtn" class="upload-btn" disabled>Enviar Arquivos</button>
+            <button id="clearBtn" class="clear-btn">Limpar</button>
+            <button id="agentBtn" class="agent-btn">Executar Agent</button>
+        </div>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

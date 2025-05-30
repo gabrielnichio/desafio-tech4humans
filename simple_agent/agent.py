@@ -2,12 +2,12 @@ import asyncio
 from dotenv import load_dotenv
 
 import pandas as pd
+from fastapi import UploadFile
 
-from exec_func import PandasExecutor
+from simple_agent.exec_func import PandasExecutor
 load_dotenv()
 
 from llama_index.core.agent.workflow import FunctionAgent
-from llama_index.core.tools import QueryEngineTool
 from llama_index.core.tools import FunctionTool
 from llama_index.core.agent.workflow import ToolCallResult, AgentStream
 
@@ -27,20 +27,26 @@ class Agent:
         Settings.llm = llm
         
         self.tools = None
-        
-        data_path = "../data"
-        
+                
         self.dataframes = {}
         
-        for file in os.listdir(data_path):
-            if file.endswith(".xlsx"):
-                file_path = os.path.join(data_path, file)
-                self.dataframes[file.replace(".xlsx", "").lower().replace("-", "_").replace(" ", "")] = pd.read_excel(file_path)
+
+    def set_dataframes(self, dataframes: list[UploadFile]):
+        
+        for dataframe in dataframes:
+            if dataframe.filename.replace(".xlsx", "").lower().replace("-", "_").replace(" ", "") in self.dataframes.keys():
+                continue
+            self.dataframes[dataframe.filename.replace(".xlsx", "").lower().replace("-", "_").replace(" ", "")] = pd.read_excel(dataframe.file)
                 
         self.dataframes["df_final"] = pd.DataFrame()
-        
+
+        print("dataframes carregados:", self.dataframes.keys())
+
         self._set_tools()
         self._init_agent()
+
+    def verify_dataframes(self):
+        return len(self.dataframes.keys()) > 1 
         
     def _set_tools(self):
 
@@ -66,7 +72,13 @@ class Agent:
         rename_columns = FunctionTool.from_defaults(
             pandas_executor.rename_columns,
             name="RenameColumns",
-            description="Função que renomeia as colunas de um dataframe. Deve ser passado o nome do dataframe, as colunas a serem renomeadas e os novos nomes das colunas. Exemplo: RenameColumns(dataframe='df1', columns=['coluna1', 'coluna2'], new_columns=['nova_coluna1', 'nova_coluna2'])",
+            description="Função que renomeia as colunas de um dataframe. rename_columns(self, dataframe_to_change: str, columns: list, new_columns: list). Exemplo: RenameColumns(dataframe='df1', columns=['coluna1', 'coluna2'], new_columns=['nova_coluna1', 'nova_coluna2'])",
+        )
+
+        rename_multiple_columns = FunctionTool.from_defaults(
+            pandas_executor.rename_multiple_dataframe_columns,
+            name="RenameMultipleDfColumns",
+            description="Função que renomeia várias colunas de varios dataframes diferentes. rename_multiple_df_columns(self, dataframes: dict) Exemplo: RenameMultipleDfColumns(dataframes={'dataframe1': {'previous_names': ['col1', 'col2'], 'new_names': ['nova_col1', 'nova_col2']}, 'dataframe2': {'previous_names': ['col3'], 'new_names': ['nova_col3']})"
         )
         
         remove_colunas = FunctionTool.from_defaults(
@@ -79,6 +91,12 @@ class Agent:
             pandas_executor.select_columns,
             name="SelecionarColunas",
             description="Funcao que seleciona as colunas de um dataframe. Deve ser passado o nome do dataframe e as colunas a serem selecionadas. Exemplo: SelecionarColunas(dataframe='df1', columns=['coluna1', 'coluna2'])"
+        )
+
+        select_multiple_df_columns = FunctionTool.from_defaults(
+            pandas_executor.select_multiple_df_columns,
+            name="SelectMultipleDfColumns",
+            description="Funcao que seleciona as colunas de varios dataframes diferentes. select_multiple_df_columns(self, dataframes: dict). Exemplo: SelecionarColunasMultiploDf(dataframes={'dataframe1': ['coluna1', 'coluna2'], 'dataframe2': ['coluna3']})"
         )
         
         soma_colunas = FunctionTool.from_defaults(
@@ -113,7 +131,19 @@ class Agent:
         )
     
         
-        self.tools = [get_infos, gera_id_unico, rename_columns, selecionar_colunas, soma_group_columns, merge_multiple_dfs, export_xlsx]        
+        self.tools = [
+            get_infos, 
+            gera_id_unico, 
+            rename_columns, 
+            rename_multiple_columns,
+            selecionar_colunas, 
+            select_multiple_df_columns,
+            soma_colunas,
+            soma_group_columns, 
+            merge_dataframes,
+            merge_multiple_dfs, 
+            export_xlsx
+        ]        
         
         
     def _init_agent(self):
@@ -125,25 +155,31 @@ class Agent:
                                         
                     Através das suas ferramentas você pode ler e manipular os dados dos dataframes.
                     
-                    Com a ferramenta GetInfos você pode obter informações sobre os dataframes disponíveis para manipulação. Ela deve ser chamada antes de executar qualquer outra função para você saber a estrutura dos dataframes disponíveis. Você pode chama-la multiplas vezes para verificar o estado dos dataframes. Chame ela antes de exportar o dataframe final para garantir que o dataframe final tenha apenas as colunas requisitadas.
+                    Com a ferramenta GetInfos você pode obter informações sobre os dataframes disponíveis para manipulação. Ela deve ser chamada antes de executar qualquer outra função para você saber a estrutura dos dataframes disponíveis. Você pode chama-la multiplas vezes para verificar o estado dos dataframes.
                     
-                    A ferramenta GeraIDUnico é utilizada para gerar um id unico para cada colaborador em todos os dataframes. A coluna resultante deve ser utilizada como id unico e para operações de merge nos dataframes. Você deve passar uma lista com os nomes dos dataframes, uma lista com so nomes da colunas do nome do colaborador e uma lista com os nomes das colunas do documento do colaborador para os respectivos dataframes. Essa função DEVE ser chamada logo após a execução da função GetInfos, para garantir que os dataframes estejam prontos para serem manipulados.
+                    Com a ferramenta TransformDuplicateValues você pode transformar valores duplicados em uma coluna de um dataframe. Utilize essa funcao apenas em colunas e dataframes que fazem sentido para operacoes futuras. Deve ser passado o nome do dataframe e a coluna a ser transformada. Exemplo: TransformDuplicateValues(dataframe='df1', column='coluna1')
 
-                    A ferramenta RenameColumns é utilizada para renomear as colunas de um dataframe. Você deve passar o nome do dataframe, as colunas a serem renomeadas e os novos nomes das colunas. Utilize ela em todos os dataframes necessários para padronizar o nome das colunas em comum em todos os dataframes. Você pode usar essa ferramenta quantas vezes for necessário para renomear as colunas do dataframe.
-                                                       
-                    A ferramenta SelecionarColunas é utilizada para selecionar as colunas de um dataframe. Você deve passar o nome do dataframe e as colunas a serem selecionadas. Essa função só pode ser executada uma única vez ao longo do fluxo. Ela é útil para filtrar as colunas que você deseja manter no dataframe final.
+                    A ferramenta GeraIDUnico é utilizada para gerar um id unico para cada colaborador em todos os dataframes. A coluna resultante deve ser utilizada como id unico para operações nos dataframes. 
+
+                    A ferramenta RenameColumns é utilizada para renomear as colunas de um dataframe. rename_columns(self, dataframe_to_change: str, columns: list, new_columns: list)
+
+                    A ferramenta RenameMultipleDfColumns é utilizada para renomear várias colunas de vários dataframes diferentes. Util para quando você puder maniuplar varios dataframes de uma vez para economizar tempo e recursos. rename_multiple_dataframe_columns(self, dataframes: dict) 
+                                    
+                    A ferramenta SelecionarColunas é utilizada para selecionar as colunas de um dataframe. select_columns(self, dataframe: str, columns: list)
                     
-                    A ferramenta SomaColunasAgrupadas é utilizada para somar vários grupos de colunas de um dataframe de uma só vez. Você deve passar o nome do dataframe e um dicionário onde as chaves são os nomes das novas colunas e os valores são listas com os nomes das colunas a serem somadas. Essa função só pode ser executada uma única vez ao longo do fluxo.
+                    A ferramenta SelectMultipleDfColumns é utilizada para selecionar as colunas de vários dataframes diferentes. select_multiple_df_columns(self, dataframes: dict)
 
-                    A ferramenta MergeMultipleDataframes é utilizada para fazer o merge de múltiplos dataframes de uma só vez usando uma coluna em comum. Você deve passar uma lista com os nomes dos dataframes a serem unidos, o nome da coluna a ser usada como base para o merge (geralmente 'id_unico'), o parâmetro how do merge ('left', 'right', 'inner', 'outer'), e o nome do dataframe de destino. Exemplo: MergeMultipleDataframes(dataframes_list=['df1', 'df2', 'df3'], on_column='id_unico', how='left', destination='df_final')
-                    NUNCA utilize nomes de dataframes que não existem como parâmetro para as funções.
-
-                    A ferramenta ExportaDataframe é utilizada para exportar um dataframe para um arquivo Excel. Você deve passar o nome do dataframe a ser exportado. Sempre execute a função GetInfos antes de exportar o dataframe final para garantir que o dataframe final tenha apenas as colunas requisitadas.
+                    A ferramenta SomaColunas é utilizada para somar as colunas de um dataframe. soma_colunas(self, dataframe: str, columns: list, new_column_name: str).
                     
-                    - Considerações importantes:
-                      - Sempre crie um novo dataframe antes de passar um nome novo para as outras funções.
-                      - Utilize apenas os dataframes disponíveis para manipulação.
-                      - Não passe nomes de dataframes que não existem como parâmetro para as funções.                  
+                    A ferramenta SomaColunasAgrupadas é utilizada para somar vários grupos de colunas de um dataframe de uma só vez. sum_column_groups(self, dataframe: str, groups: dict)
+
+                    A ferramenta MergeDataframes é utilizada para fazer o merge de dois dataframes. merge_dataframes(self, dataframe1: str, dataframe2: str, left_on: str, right_on: str, how: str, destination: str).
+                    
+                    A ferramenta MergeMultipleDataframes é utilizada para fazer o merge de múltiplos dataframes de uma só vez usando uma coluna em comum. merge_dataframes(self, dataframe1: str, dataframe2: str, left_on: str, right_on: str, how: str, destination: str)
+
+                    A ferramenta ExportaDataframe é utilizada para exportar um dataframe para um arquivo Excel. export_df(self, dataframe_to_export: str)
+                               
+                    Coloque e exporte o dataframe final com o nome 'df_final'.
                 """
             )
         )
@@ -166,18 +202,3 @@ class Agent:
         
         print(f"Resposta: ${response}")
         return response
-    
-    
-# if __name__ == "__main__":
-#     agent = Agent()
-    
-#     asyncio.run(agent.run("""
-#         gere e exporte um dataframe que calcula os custos por colaborador e exporte-o APENAS com colunas: 
-#             -ID: identificador do colaborador (id unico)
-#             -Nome: Nome do colaborador
-#             -Centro de Custo: centro de custo do colaborador
-#             -uma coluna para cada custo, sendo o nome da coluna o nome do custo (ferramentas, beneficios, salarios, prejuizos, etc)
-#             -Custo Total: soma de todos os custos do colaborador
-            
-#         Não insira mais nenhuma coluna relacionada a outras coisas no dataframe final.
-#     """))

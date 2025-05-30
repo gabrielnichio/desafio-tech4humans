@@ -1,4 +1,5 @@
 import pandas as pd
+from typing import TypedDict, List, Dict
 
 class PandasExecutor:
     def __init__(self, dataframes):
@@ -11,13 +12,27 @@ class PandasExecutor:
         """
 
         def format_df_info(df, name):
+            object_cols_with_duplicates = []
+            object_columns = df.select_dtypes(include=['object']).columns
+            
+            for col in object_columns:
+                if df[col].duplicated().any():
+                    object_cols_with_duplicates.append(
+                        f"Coluna: {col} com valores ducplicados"
+                    )
+            
+            duplicates_info = "\n            ".join(object_cols_with_duplicates) if object_cols_with_duplicates else "Nenhuma"
+            
             return f"""
             {name}:
             Shape: {df.shape}
             Columns: {list(df.columns)}
             Data types: 
             {df.dtypes}
+            Colunas object com valores duplicados:
+                {duplicates_info}
             """
+        
         all_info = []    
 
         for dataframe in self.dataframes:
@@ -40,7 +55,8 @@ class PandasExecutor:
             )
 
         return self.get_infos()
-      
+        
+        
     def rename_columns(self, dataframe_to_change: str, columns: list, new_columns: list):
         """
             Funcao que renomeia as colunas de um dataframe
@@ -58,7 +74,36 @@ class PandasExecutor:
             return f"Colunas renomeadas com sucesso!\n\n"
         except Exception as e:
             return f"Erro ao renomear colunas: {e}" 
-        
+    
+    class DataframeInfo(TypedDict):
+        previous_names: List[str]
+        new_names: List[str]
+    
+    Dataframe = Dict[str, DataframeInfo]
+
+    def rename_multiple_dataframe_columns(self, dataframes: Dataframe):
+        """
+            Funcao que renomeia colunas de varios dataframes de uma vez
+            Parâmetros:
+                dataframes (dict): Dicionário onde as chaves são os nomes dos dataframes e os valores são dicionários com as colunas anteriores e novas
+                    Exemplo:
+                    {
+                        'dataframe1': {'previous_names': ['col1', 'col2'], 'new_names': ['nova_col1', 'nova_col2']},
+                        'dataframe2': {'previous_names': ['col3'], 'new_names': ['nova_col3']}
+                    } 
+        """
+
+        try:
+            for dataframe_name, info in dataframes.items():
+                df: pd.DataFrame = self.dataframes[dataframe_name].copy()
+
+                df.rename(columns=dict(zip(info['previous_names'], info['new_names'])), inplace=True)
+
+                self.dataframes[dataframe_name] = df
+            return "Colunas renomeadas com sucesso!\n\n"
+        except Exception as e:
+            return f"Erro ao renomear colunas: {e}"
+
     def remove_columns(self, dataframe_to_change: str, columns: list):
         """
             Funcao que remove as colunas de um dataframe
@@ -108,6 +153,27 @@ class PandasExecutor:
             
             df = df[columns]
             self.dataframes[dataframe] = df
+            
+            return "Colunas selecionadas com sucesso!\n\n"
+        except Exception as e:
+            return f"Erro ao selecionar colunas: {e}"
+
+    def select_multiple_df_columns(self, dataframes: dict):
+        """
+            Funcao que modifica múltiplos dataframes para conter apenas as colunas especificadas
+            Parametros:
+                dataframes (dict): Dicionário onde as chaves são os nomes dos dataframes e os valores são listas de colunas a serem mantidas
+
+            Exemplo: { 'dataframe1': ['col1', 'col2'], 'dataframe2': ['col3', 'col4'] }
+        """
+
+        try:
+            for dataframe, columns in dataframes.items():
+                df = self.dataframes[dataframe].copy()
+
+                
+                df = df[columns]
+                self.dataframes[dataframe] = df
             
             return "Colunas selecionadas com sucesso!\n\n"
         except Exception as e:
@@ -203,7 +269,7 @@ class PandasExecutor:
             Funcao capaz de exportar o df_final
         """
         try:
-            self.dataframes[dataframe_to_export].to_excel("output/teste.xlsx")
+            self.dataframes[dataframe_to_export].to_excel("output/custos_por_colaborador.xlsx")
             
             return "Dataframe exportado com sucesso!\n\n"
         except Exception as e:

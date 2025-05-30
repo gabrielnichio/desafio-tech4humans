@@ -4,8 +4,6 @@ from simple_agent.exec_func import PandasExecutor
 class ToolAgentsController:
     def __init__(self, dataframes):
         self.pandas_executor = PandasExecutor(dataframes)
-        self.tokens_in = 0
-        self.tokens_out = 0
 
     def get_infos(self):
         return self.pandas_executor.get_infos()
@@ -26,10 +24,7 @@ class ToolAgentsController:
 
         query = f"dataframes={dataframes}, nome_coluna_nome={nome_coluna_nome}, nome_coluna_documento={nome_coluna_documento}"
 
-        (response, token_usage) = await agent.tool_agent(query)
-
-        self.tokens_in += token_usage['prompt_tokens']
-        self.tokens_out += token_usage['completion_tokens']
+        response = await agent.tool_agent(query)
 
         return response
 
@@ -49,10 +44,27 @@ class ToolAgentsController:
 
         query = f"dataframe_to_change={dataframe_to_change}, columns={columns}, new_columns={new_columns}"
 
-        (response, token_usage) = await agent.tool_agent(query)
+        response = await agent.tool_agent(query)
 
-        self.tokens_in += token_usage['prompt_tokens']
-        self.tokens_out += token_usage['completion_tokens']
+        return response
+    
+    async def rename_multiple_dataframes_columns_agent(self, dataframes: dict):
+        agent = ToolAgent(
+            self.pandas_executor.rename_multiple_dataframe_columns,
+            tool_name="RenameMultipleDataframesColumnsAgent",
+            tool_description="""Agente capaz de renomear colunas de multiplos dataframes. Deve ser passado um dicionario com o nome do dataframe e as colunas a serem renomeadas. Exemplo: RenameMultipleDataframesColumnsAgent(dataframes={'dataframe1': {'previous_names': ['col1', 'col2'], 'new_names': ['nova_col1', 'nova_col2']}, 'dataframe2': {'previous_names': ['col3'], 'new_names': ['nova_col3']})""",
+            agent_prompt=(
+                """
+                    Agente que renomeia colunas de multiplos dataframes. 
+                    Voce possui uma tool que recebe um dicionario com o nome do dataframe e as colunas a serem renomeadas.
+                    Responda em apenas uma linha exatamente a operação que você realizou, com todos os parametros. Explique objetivamente.
+                """
+            )
+        )
+
+        query = f"dataframes={dataframes}"
+
+        response = await agent.tool_agent(query)
 
         return response
     
@@ -72,10 +84,7 @@ class ToolAgentsController:
 
         query = f"dataframe_to_change={dataframe_to_change}, columns={columns}"
 
-        (response, token_usage) = await agent.tool_agent(query)
-
-        self.tokens_in += token_usage['prompt_tokens']
-        self.tokens_out += token_usage['completion_tokens']
+        response = await agent.tool_agent(query)
 
         return response
     
@@ -98,6 +107,25 @@ class ToolAgentsController:
         respose = await agent.tool_agent(query)
         return respose
     
+    async def select_multiple_df_columns_agent(self, dataframes: list):
+        agent = ToolAgent(
+            self.pandas_executor.select_multiple_df_columns,
+            tool_name="SelectMultipleDfColumnsAgent",
+            tool_description="Agente capaz de selecionar colunas de multiplos dataframes. Deve ser passado um dicionario com o nome do dataframe e as colunas a serem selecionadas. Exemplo: SelectMultipleDfColumnsAgent(dataframes={'dataframe1': ['coluna1', 'coluna2'], 'dataframe2': ['coluna3']})",
+            agent_prompt=(
+                """
+                    Agente que seleciona colunas de multiplos dataframes. 
+                    Voce possui uma tool que recebe um dicionario com o nome do dataframe e as colunas a serem selecionadas.
+                    Responda em apenas uma linha exatamente a operação que você realizou, com todos os parametros. Explique objetivamente.
+                """
+            )
+        )
+
+        query= f"dataframes={dataframes}"
+
+        response = await agent.tool_agent(query)
+        return response
+
     async def sum_columns_agent(self, dataframe: str, columns: list, new_column_name: str):
         agent = ToolAgent(
             self.pandas_executor.soma_colunas,
@@ -114,10 +142,27 @@ class ToolAgentsController:
 
         query = f"dataframe={dataframe}, columns={columns}, new_column_name={new_column_name}"
 
-        (response, token_usage) = await agent.tool_agent(query)
+        response = await agent.tool_agent(query)
 
-        self.tokens_in += token_usage['prompt_tokens']
-        self.tokens_out += token_usage['completion_tokens']
+        return response
+    
+    async def sum_multiple_columns_agent(self, dataframe: str, groups: dict):
+        agent = ToolAgent(
+            self.pandas_executor.sum_column_groups,
+            tool_name="SumMultipleColumnsAgent",
+            tool_description="Agente capaz de somar colunas de um dataframe usando grupos. Deve ser passado o nome do dataframe e os grupos a serem somados. Exemplo: SumMultipleColumnsAgent(dataframe='df_final', groups={'df1': ['coluna1', 'coluna2'], 'df2': ['coluna3']})",
+            agent_prompt=(
+                """
+                    Agente que soma colunas de um dataframe usando grupos. 
+                    Voce possui uma tool que recebe o nome do dataframe e os grupos a serem somados.
+                    Responda em apenas uma linha exatamente a operação que você realizou, com todos os parametros. Explique objetivamente.
+                """
+            )
+        )
+
+        query = f"dataframe={dataframe}, groups={groups}"
+
+        response = await agent.tool_agent(query)
 
         return response
 
@@ -137,19 +182,30 @@ class ToolAgentsController:
 
         query = f"dataframe1={dataframe1}, dataframe2={dataframe2}, left_on={left_on}, right_on={right_on}, how={how}, destination={destination}"
 
-        (response, token_usage) = await agent.tool_agent(query)
+        response = await agent.tool_agent(query)
 
-        self.tokens_in += token_usage['prompt_tokens']
-        self.tokens_out += token_usage['completion_tokens']
+        return response
+
+    async def merge_multiple_dataframes_agent(self, dataframes_list: list, on_column: str, how: str, destination: str):
+        agent = ToolAgent(
+            self.pandas_executor.merge_multiple_dataframes,
+            tool_name="MergeMultipleDataframesAgent",
+            tool_description="Função que faz o merge de múltiplos dataframes usando uma coluna em comum. Deve ser passado a lista de dataframes, a coluna em comum, o parametro how do merge, e o nome do dataframe de destino. Exemplo: MergeMultipleDataframesAgent(dataframes_list=['df1', 'df2', 'df3'], on_column='id_unico', how='left', destination='df_final')",
+            agent_prompt=(
+                """
+                    Agente que da merge em multiplos dataframes. 
+                    Voce possui uma tool que recebe a lista de dataframes, a coluna em comum, o parametro how do merge, e o nome do dataframe de destino.
+                    Responda em apenas uma linha exatamente a operação que você realizou, com todos os parametros. Explique objetivamente.
+                """
+            )
+        )
+
+        query = f"dataframes_list={dataframes_list}, on_column={on_column}, how={how}, destination={destination}"
+        
+        response = await agent.tool_agent(query)
 
         return response
 
     def export_df(self, dataframe_name):
         return self.pandas_executor.export_df(dataframe_name)
     
-    def print_token_count(self):
-        print(f"Tokens In: {self.tokens_in}, Tokens Out: {self.tokens_out}")
-        return {
-            'tokens_in': self.tokens_in,
-            'tokens_out': self.tokens_out
-        }
