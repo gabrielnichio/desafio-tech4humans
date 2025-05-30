@@ -78,16 +78,16 @@ class PandasExecutor:
         """
             Funcao que soma as colunas de um dataframe
         """
-        
-        df = self.dataframes[dataframe].copy()
-        
-        df[new_column_name] = df[columns].sum(axis=1)
-        
-        self.dataframes[dataframe] = df
+        try:
+            df = self.dataframes[dataframe].copy()
+            
+            df[new_column_name] = df[columns].sum(axis=1)
+            
+            self.dataframes[dataframe] = df
+            return "Colunas somadas com sucesso!\n\n"
+        except Exception as e:
+            return f"Erro ao somar colunas: {e}"        
                 
-        
-        print(f"Colunas {columns} somadas com sucesso e armazenadas na coluna {new_column_name}!\n\n")
-        
     def select_columns(self, dataframe: str, columns: list):
         """
             Função que modifica um dataframe para conter apenas as colunas especificadas
@@ -152,16 +152,18 @@ class PandasExecutor:
         """
             Funcao que faz o merge de dois dataframes
         """
-        
-        df1 = self.dataframes[dataframe1].copy()
-        df2 = self.dataframes[dataframe2].copy()
-        
-        new_dataframe = pd.merge(df1, df2, left_on=left_on, right_on=right_on, how=how)
-        
-        self.dataframes[destination] = new_dataframe
-        
-        print(f"Dataframes {dataframe1} e {dataframe2} unidos com sucesso!\n\n")
+        try :
+            df1 = self.dataframes[dataframe1].copy()
+            df2 = self.dataframes[dataframe2].copy()
 
+            new_dataframe = pd.merge(df1, df2, left_on=left_on, right_on=right_on, how=how)
+
+            self.dataframes[destination] = new_dataframe
+
+            return "Dataframes unidos com sucesso!\n\n"
+        except Exception as e:
+            return f"Erro ao unir dataframes: {e}"
+        
     def merge_multiple_dataframes(self, dataframes_list: list, on_column: str, how: str, destination: str):
         """
             Função que faz o merge de múltiplos dataframes usando uma coluna em comum
@@ -201,7 +203,7 @@ class PandasExecutor:
             Funcao capaz de exportar o df_final
         """
         try:
-            self.dataframes[dataframe_to_export].to_excel("teste.xlsx")
+            self.dataframes[dataframe_to_export].to_excel("output/teste.xlsx")
             
             return "Dataframe exportado com sucesso!\n\n"
         except Exception as e:
