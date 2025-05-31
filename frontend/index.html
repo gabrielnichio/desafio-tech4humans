@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload de Arquivos Excel</title>
+    <title>Agente Manipulador de Dados</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Upload de Arquivos Excel</h1>
+            <h1>Agente Manipulador de Dados</h1>
             <p>Selecione um ou mais arquivos Excel para enviar</p>
         </header>
 
         <div class="upload-area" id="uploadArea">
-            <div class="upload-icon">📁</div>
             <p>Arraste arquivos aqui ou clique para selecionar</p>
             <input type="file" id="fileInput" accept=".xlsx,.xls" multiple>
         </div>
@@ -28,6 +27,11 @@
         </div>
 
         <div class="status" id="status"></div>
+
+        <div class="chart-container" id="chartContainer">
+            <h3>Médias de custos</h3>
+            <div class="chart" id="chart"></div>
+        </div>
     </div>
 
     <script src="script.js"></script>

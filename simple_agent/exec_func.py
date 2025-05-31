@@ -1,4 +1,7 @@
 import pandas as pd
+import hashlib
+import uuid
+
 from typing import TypedDict, List, Dict
 
 class PandasExecutor:
@@ -50,8 +53,18 @@ class PandasExecutor:
             col_nome = nome_coluna_nome[i]
             col_doc = nome_coluna_documento[i]
             
+            def generate_uuid_for_row(row):
+                if pd.isna(row[col_nome]) or pd.isna(row[col_doc]) or \
+                    str(row[col_nome]).strip() == '' or str(row[col_doc]).strip() == '':
+                    return None
+                
+                colaborador_string = f"{row[col_nome]}_{row[col_doc]}"
+                
+                namespace = uuid.NAMESPACE_DNS
+                return str(uuid.uuid5(namespace, colaborador_string))
+            
             self.dataframes[dataframe]["id_unico"] = self.dataframes[dataframe].apply(
-                lambda x: f"{x[col_nome]}_{x[col_doc]}", axis=1
+                generate_uuid_for_row, axis=1
             )
 
         return self.get_infos()
@@ -274,3 +287,20 @@ class PandasExecutor:
             return "Dataframe exportado com sucesso!\n\n"
         except Exception as e:
             return f"Erro ao exportar o dataframe {e}\n\n"
+
+    def generate_html_analysis(self, final_dataframe: str):
+        try:
+            df_final: pd.DataFrame = self.dataframes[final_dataframe]
+
+            numerical_columns = df_final.select_dtypes(include="number")
+
+            df_mean = numerical_columns.mean()
+
+            data = {}
+
+            for column in df_mean.keys():
+                data[column] = df_mean[column]
+
+            return data
+        except Exception as e:
+            return f"Erro ao gerar dados HTML {e}\n\n"

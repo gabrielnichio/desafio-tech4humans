@@ -63,6 +63,12 @@ def run_agent():
             filename="custos_por_colaborador.xlsx",
             media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
+    
+@app.get("/html")
+def get_html():
+    html = agent.html_analysis()
+
+    return {"html": html}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

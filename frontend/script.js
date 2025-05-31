@@ -12,33 +12,32 @@ class ExcelUploader {
         this.clearBtn = document.getElementById('clearBtn');
         this.agentBtn = document.getElementById('agentBtn');
         this.status = document.getElementById('status');
+        this.chartContainer = document.getElementById('chartContainer');
+        this.chart = document.getElementById('chart');
 
         this.bindEvents();
     }
 
     bindEvents() {
-        // Drag and drop
+
         this.uploadArea.addEventListener('dragover', (e) => this.handleDragOver(e));
         this.uploadArea.addEventListener('dragleave', (e) => this.handleDragLeave(e));
         this.uploadArea.addEventListener('drop', (e) => this.handleDrop(e));
 
-        // File input
+
         this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
 
-        // Upload area click
         this.uploadArea.addEventListener('click', (e) => {
-            // Não abrir seletor se clicou no botão de upload ou já tem arquivos sendo enviados
             if (e.target.closest('.upload-btn') || this.uploadBtn.disabled) return;
             this.fileInput.click();
         });
 
-        // Buttons
         this.uploadBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Previne propagação do evento
+            e.stopPropagation();
             this.uploadFiles();
         });
         this.clearBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Previne propagação do evento
+            e.stopPropagation();
             this.clearFiles();
         });
         this.agentBtn.addEventListener('click', () => this.runAgent());
@@ -128,6 +127,7 @@ class ExcelUploader {
         this.renderFileList();
         this.updateUploadButton();
         this.hideStatus();
+        this.hideChart();
     }
 
     async uploadFiles() {
@@ -159,6 +159,23 @@ class ExcelUploader {
         } finally {
             this.uploadBtn.disabled = false;
             this.updateUploadButton();
+        }
+    }
+
+    async getHTML() {
+        try {
+            const response = await fetch('http://localhost:8000/html', {
+                method: 'GET'
+            });
+
+            const html_data = await response.json()
+
+            console.log("response", html_data.html)
+
+            this.createChart(html_data.html);
+
+        } catch (error) {
+            this.showStatus(`Erro ao gerar grafico HTML: ${error.message}`, 'error');
         }
     }
 
@@ -201,6 +218,8 @@ class ExcelUploader {
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
 
+                    await this.getHTML();
+
                     this.showStatus('Agent executado com sucesso! Arquivo baixado.', 'success');
 
                 } else {
@@ -223,9 +242,30 @@ class ExcelUploader {
     hideStatus() {
         this.status.className = 'status';
     }
+
+    createChart(data) {
+        const maxValue = Math.max(...Object.values(data));
+
+        console.log("data", data);
+
+        this.chart.innerHTML = Object.entries(data).map(([column, value]) => `
+            <div class="chart-bar">
+                <div class="chart-label">${column}</div>
+                <div class="chart-bar-container">
+                    <div class="chart-bar-fill" style="width: ${(value / maxValue) * 100}%"></div>
+                </div>
+                <div class="chart-value">${value.toFixed(2)}</div>
+            </div>
+        `).join('');
+
+        this.chartContainer.style.display = 'block';
+    }
+
+    hideChart() {
+        this.chartContainer.style.display = 'none';
+    }
 }
 
-// Inicializar o uploader quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', () => {
     window.uploader = new ExcelUploader();
 });
