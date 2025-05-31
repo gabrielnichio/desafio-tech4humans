@@ -170,8 +170,6 @@ class ExcelUploader {
 
             const html_data = await response.json()
 
-            console.log("response", html_data.html)
-
             this.createChart(html_data.html);
 
         } catch (error) {
@@ -245,8 +243,6 @@ class ExcelUploader {
 
     createChart(data) {
         const maxValue = Math.max(...Object.values(data));
-
-        console.log("data", data);
 
         this.chart.innerHTML = Object.entries(data).map(([column, value]) => `
             <div class="chart-bar">

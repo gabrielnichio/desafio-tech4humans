@@ -27,6 +27,8 @@ class Agent:
         Settings.llm = llm
         
         self.tools = None
+
+        self.tool_agents = None
                 
         self.dataframes = {}
 
@@ -47,19 +49,22 @@ class Agent:
 
     def verify_dataframes(self):
         return len(self.dataframes.keys()) > 1    
+    
+    def html_analysis(self):
+        return self.tool_agents.html_analysis("df_final")
 
     def _set_tools(self):
 
-        tool_agents = ToolAgentsController(self.dataframes)
+        self.tool_agents = ToolAgentsController(self.dataframes)
         
         get_infos = FunctionTool.from_defaults(
-            tool_agents.get_infos,
+            self.tool_agents.get_infos,
             name="GetInfos",
             description="Funcao que retorna as informacoes dos dataframes. Essa funcao deve ser chamada antes de executar qualquer linha de codigo. Você pode chama-la multiplas vezes para verificar o estado dos dataframes. Ela lista o nome e informações dos dataframes que estão disponíveis para manipulação.",
         )
 
         generate_unique_id = FunctionTool.from_defaults(
-            tool_agents.generate_unique_id,
+            self.tool_agents.generate_unique_id,
             name="GenerateUniqueID",
             description="""Agente que gera um id unico para cada colaborador.
             A coluna resultante deve ser utilizada como id unico e para operações de merge nos dataframes. 
@@ -67,7 +72,7 @@ class Agent:
         )
 
         rename_column_agent = FunctionTool.from_defaults(
-            tool_agents.rename_column_agent,
+            self.tool_agents.rename_column_agent,
             name="RenameColumnsAgent",
             description="""Agente capaz de renomear as colunas de um dataframe. Voce deve passar os seguintes parametros:
             rename_columns(self, dataframe_to_change: str, columns: list, new_columns: list)
@@ -75,7 +80,7 @@ class Agent:
         )
 
         rename_multiple_df_columns_agent = FunctionTool.from_defaults(
-            tool_agents.rename_multiple_dataframes_columns_agent,
+            self.tool_agents.rename_multiple_dataframes_columns_agent,
             name="RenameMultipleDfColumnsAgent",
             description="""Agente capaz de renomear multiplos dataframes. Voce deve passar os seguintes parametros:
             rename_multiple_df_columns(self, dataframes: dict)
@@ -83,7 +88,7 @@ class Agent:
         )
 
         remove_columns_agent = FunctionTool.from_defaults(
-            tool_agents.remove_columns_agent,
+            self.tool_agents.remove_columns_agent,
             name="RemoveColumnsAgent",
             description="""Agente capaz de remover colunas de um dataframe. Voce deve passar os seguintes parametros:
             remove_columns(self, dataframe_to_change: str, columns: list)
@@ -91,7 +96,7 @@ class Agent:
         )
 
         select_columns_agent = FunctionTool.from_defaults(
-            tool_agents.select_columns_agent,
+            self.tool_agents.select_columns_agent,
             name="SelectColumnsAgent",
             description="""Agente capaz de selecionar colunas de um dataframe e modifica-lo. Voce deve passar os seguintes parametros:
             select_columns(self, dataframe: str, columns: list)
@@ -99,7 +104,7 @@ class Agent:
         )
 
         select_multiple_df_columns_agent = FunctionTool.from_defaults(
-            tool_agents.select_multiple_df_columns_agent,
+            self.tool_agents.select_multiple_df_columns_agent,
             name="SelectMultipleDfColumnsAgent",
             description="""Agente capaz de selecionar colunas de multiplos dataframes. Voce deve passar os seguintes parametros:
             select_multiple_df_columns(self, dataframes: dict)
@@ -107,7 +112,7 @@ class Agent:
         )
 
         sum_columns_agent = FunctionTool.from_defaults(
-            tool_agents.sum_columns_agent,
+            self.tool_agents.sum_columns_agent,
             name="SumColumnsAgent",
             description="""Agente capaz de somar colunas de um dataframe. Voce deve passar os seguintes parametros:
             soma_colunas(self, dataframe: str, columns: list, new_column_name: str)
@@ -115,7 +120,7 @@ class Agent:
         )
 
         sum_multiple_columns_agent = FunctionTool.from_defaults(
-            tool_agents.sum_multiple_columns_agent,
+            self.tool_agents.sum_multiple_columns_agent,
             name="SumMultipleColumnsAgent",
             description="""Agente capaz de somar multiplos dataframes. Voce deve passar os seguintes parametros:
             sum_column_groups(self, dataframe: str, groups: dict)
@@ -123,7 +128,7 @@ class Agent:
         )
 
         merge_dataframes_agent = FunctionTool.from_defaults(
-            tool_agents.merge_dataframes_agent,
+            self.tool_agents.merge_dataframes_agent,
             name="MergeDataframesAgent",
             description="""Agente capaz de mesclar dataframes. Voce deve passar os seguintes parametros: 
             merge_dataframes(self, dataframe1: str, dataframe2: str, left_on: str, right_on: str, how: str, destination: str)
@@ -131,14 +136,14 @@ class Agent:
         )
 
         merge_multiple_dataframes_agent = FunctionTool.from_defaults(
-            tool_agents.merge_multiple_dataframes_agent,
+            self.tool_agents.merge_multiple_dataframes_agent,
             name="MergeMultipleDataframesAgent",
             description="""Agente capaz de mesclar multiplos dataframes. Voce deve passar os seguintes parametros:
             merge_multiple_dataframes(self, dataframes_list: list, on_column: str, how: str, destination: str)
             """
         )
         export_xlsx = FunctionTool.from_defaults(
-            tool_agents.export_df,
+            self.tool_agents.export_df,
             name="ExportaDataframe",
             description="""Funcao capaz de exportar o dataframe final. Deve ser passado os seguintes parametros: 
             export_df(self, dataframe_name: str)

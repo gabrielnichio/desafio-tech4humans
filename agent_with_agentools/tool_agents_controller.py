@@ -209,3 +209,6 @@ class ToolAgentsController:
     def export_df(self, dataframe_name):
         return self.pandas_executor.export_df(dataframe_name)
     
+    def html_analysis(self, final_dataframe: str):
+        return self.pandas_executor.generate_html_analysis(final_dataframe)
+    
