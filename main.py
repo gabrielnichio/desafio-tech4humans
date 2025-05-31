@@ -1,9 +1,9 @@
 import asyncio
 # uncomment to use Agent with agents as tools
-from agent_with_agentools.agent_with_agent import Agent 
+# from agent_with_agentools.agent_with_agent import Agent 
 
 # uncomment to use Single Agent with tools
-# from simple_agent.agent import Agent
+from simple_agent.agent import Agent
 
 from fastapi import FastAPI, UploadFile
 from fastapi.responses import FileResponse

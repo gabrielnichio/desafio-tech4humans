@@ -139,7 +139,7 @@ class PandasExecutor:
         try:
             df = self.dataframes[dataframe].copy()
             
-            df[new_column_name] = df[columns].sum(axis=1)
+            df[new_column_name] = df[columns].abs().sum(axis=1)
             
             self.dataframes[dataframe] = df
             return "Colunas somadas com sucesso!\n\n"
@@ -218,7 +218,7 @@ class PandasExecutor:
                 if len(columns_to_sum) <= 1:
                     return f"Erro: É necessário fornecer mais de uma coluna para a soma. {columns_to_sum}"
                 
-                df[new_column_name] = df[columns_to_sum].sum(axis=1)
+                df[new_column_name] = df[columns_to_sum].abs().sum(axis=1)
                 somas_realizadas.append(f"'{new_column_name}': {columns_to_sum}")
             
             self.dataframes[dataframe] = df
@@ -290,7 +290,8 @@ class PandasExecutor:
 
     def generate_html_analysis(self, final_dataframe: str):
         try:
-            df_final: pd.DataFrame = self.dataframes[final_dataframe]
+
+            df_final: pd.DataFrame = self.dataframes.copy().popitem()[1]
 
             numerical_columns = df_final.select_dtypes(include="number")
 
